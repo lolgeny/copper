@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::fmt::Display;
 
 include!(concat!(env!("OUT_DIR"), "/blocks.rs"));

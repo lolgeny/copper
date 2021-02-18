@@ -1,12 +1,19 @@
-use std::{fmt::{Display, Write}, path::{Path, PathBuf}};
+use std::{fmt::{Display, Write}};
 use crate::minecraft::Entity;
 
+/// Represents an identifier, of the form `namespace:folders.../id`
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Identifier<'a, 'b> {
+    /// The namespace the identifier is in
     pub namespace: &'a str,
+    /// The folders leading up to the target
     pub folders: &'a [&'b str],
+    /// The actual id of the identifier
     pub id: &'a str
 }
 impl<'a, 'b> Identifier<'a, 'b> {
+    /// Create an identifier from a namespace and parts.
+    /// It's recommended to use the macro [`id!`] in most cases, however.
     pub fn new(namespace: &'a str, parts: &'a [&'b str]) -> Self {
         Self {
             namespace,
@@ -14,15 +21,16 @@ impl<'a, 'b> Identifier<'a, 'b> {
             id: parts[parts.len()-1]
         }
     }
-    pub fn join(&self, path: impl AsRef<Path>) -> PathBuf {
-        let mut path = path.as_ref().join(self.namespace);
-        for part in self.folders {
-            path = path.join(part);
-        };
-        path
-    }
 }
 
+/// Create an [`Identifier`]. For `minecraft` namespaces, this may be left out.
+/// ```
+/// # use copper::{id, core::Identifier};
+/// # fn main() {
+/// assert_eq!(id!(foo:bar/quux), Identifier::new("foo", &["bar", "quux"]));
+/// assert_eq!(id!(golden_carrot), Identifier::new("minecraft", &["golden_carrot"]));
+/// # }
+/// ```
 #[macro_export]
 macro_rules! id {
     ($namespace:ident : $($part:ident)/+) => {
@@ -34,7 +42,7 @@ macro_rules! id {
 }
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum SelectorType {
+enum SelectorType {
     S, P, E, A, R
 }
 impl Default for SelectorType {
@@ -54,9 +62,14 @@ impl Display for SelectorType {
         })
     }
 }
+
+/// Different sorts used in selectors, e.g `sort=nearest` => `SelectorSort::Nearest`
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum SelectorSort {
-    Nearest, Furthest, Arbritrary, Random
+    #[doc = "Represents `sort=nearest`"] Nearest,
+    #[doc = "Represents `sort=furthest`"] Furthest,
+    #[doc = "Represents `sort=arbritrary`"] Arbritrary,
+    #[doc = "Represents `sort=random`"] Random
 }
 impl Display for SelectorSort {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -69,9 +82,14 @@ impl Display for SelectorSort {
         })
     }
 }
+
+/// Represents a game mode, used in selectors.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GameMode {
-    Creative, Survival, Spectator, Adventure
+    #[doc = "Represents `gamemode=creative`"] Creative,
+    #[doc = "Represents `gamemode=survival`"] Survival,
+    #[doc = "Represents `gamemode=spectator`"] Spectator,
+    #[doc = "Represents `gamemode=adventure`"] Adventure
 }
 impl Display for GameMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -84,58 +102,75 @@ impl Display for GameMode {
         })
     }
 }
+
+/// Represents a selector.
+/// Create a selector using one of the `at_` functions, like `at_s()`.
+/// Then modify it using the builder pattern. Each attribute for selectors has a method.
+/// Since many selector attributes have an optional `!`, these are represented with tuples, the second element being positiveness.
+/// Examples:
+/// `at_a().tag("foo").game_mode((GameMode::Creative, true))` == `@a[tag=foo,gamemode=creative]`
+/// `at_e().type("cow").sort(SelectorSort::Nearest).limit(1)` == `@e[type=cow,sort=nearest,limit=1]`
+/// `at_s()` == `@s`
+/// `at_a().game_mode((GameMode::Spectator, false))` == `@a[gamemode=!spectator]`
 #[derive(Default, Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Selector<'a> {
     sel: SelectorType,
-    pub limit: Option<u64>,
-    pub sort: Option<SelectorSort>,
-    pub level: Option<(u64, u64)>,
-    pub game_mode: Option<(GameMode, bool)>,
-    pub name: Option<(&'a str, bool)>,
-    pub x_rot: Option<(u64, u64)>,
-    pub y_rot: Option<(u64, u64)>,
-    pub ty: Option<(Entity, bool)>,
-    pub tag: Option<(&'a str, bool)>,
+    #[doc = "Represents `limit=`"] pub limit: Option<u64>,
+    #[doc = "Represents `sort=`"] pub sort: Option<SelectorSort>,
+    #[doc = "Represents `level=`"] pub level: Option<(u64, u64)>,
+    #[doc = "Represents `gamemode=`"] pub game_mode: Option<(GameMode, bool)>,
+    #[doc = "Represents `name=`"] pub name: Option<(&'a str, bool)>,
+    #[doc = "Represents `x_rotation=`"] pub x_rot: Option<(u64, u64)>,
+    #[doc = "Represents `y_rotation=`"] pub y_rot: Option<(u64, u64)>,
+    #[doc = "Represents `type=`"] pub ty: Option<(Entity, bool)>,
+    #[doc = "Represents `tag=`"] pub tag: Option<(&'a str, bool)>,
     // TODO: Add other complex stuff
 }
 impl<'a> Selector<'a> {
     fn new(sel: SelectorType) -> Self {
-        let mut this = Self::default();
-        this.sel = sel;
-        this
+        Self {sel, ..Self::default()}
     }
+    /// Sets the `limit` of this selector.
     pub fn limit(mut self, limit: u64) -> Self {
         self.limit = Some(limit);
         self
     }
+    /// Sets the `sort` of this selector.
     pub fn sort(mut self, sort: SelectorSort) -> Self {
         self.sort = Some(sort);
         self
     }
+    /// Sets the `level` of this selector.
     pub fn level(mut self, min: u64, max: u64) -> Self {
         self.level = Some((min, max));
         self
     }
+    /// Sets the `game_mode` of this selector.
     pub fn game_mode(mut self, game_mode: GameMode, positive: bool) -> Self {
         self.game_mode = Some((game_mode, positive));
         self
     }
+    /// Sets the `name` of this selector.
     pub fn name(mut self, name: &'a str, positive: bool) -> Self {
         self.name = Some((name, positive));
         self
     }
+    /// Sets the `x_rot` of this selector.
     pub fn x_rot(mut self, min: u64, max: u64) -> Self {
         self.x_rot = Some((min, max));
         self
     }
+    /// Sets the `y_rot` of this selector.
     pub fn y_rot(mut self, min: u64, max: u64) -> Self {
         self.y_rot = Some((min, max));
         self
     }
+    /// Sets the `entity` of this selector.
     pub fn entity(mut self, ty: Entity, positive: bool) -> Self {
         self.ty = Some((ty, positive));
         self
     }
+    /// Sets the `tag` of this selector.
     pub fn tag(mut self, tag: &'a str, positive: bool) -> Self {
         self.tag = Some((tag, positive));
         self
@@ -167,20 +202,26 @@ impl Display for Selector<'_> {
         Ok(())
     }
 }
+/// Contains methods to create diferent [`Selector`]s.
 pub mod sel {
     use super::{Selector, SelectorType};
+    /// Creates an `@s` selector
     pub fn at_s<'a>() -> Selector<'a> {
         Selector::new(SelectorType::S)
     }
+    /// Creates an `@p` selector
     pub fn at_p<'a>() -> Selector<'a> {
         Selector::new(SelectorType::P)
     }
+    /// Creates an `@e` selector
     pub fn at_e<'a>() -> Selector<'a> {
         Selector::new(SelectorType::E)
     }
+    /// Creates an `@a` selector
     pub fn at_a<'a>() -> Selector<'a> {
         Selector::new(SelectorType::A)
     }
+    /// Creates an `@r` selector
     pub fn at_r<'a>() -> Selector<'a> {
         Selector::new(SelectorType::R)
     }
@@ -188,10 +229,13 @@ pub mod sel {
 
 #[inline]
 fn zero(x: f64, f: &mut std::fmt::Formatter<'_>) {if x != 0.0 {write!(f, "{}", x).unwrap();}}
+
+/// Represents a single coordinate, either absolute or relative.
+/// Does not contain local coordinates, see [`Coordinates`].
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Coordinate {
-    Absolute(f64),
-    Relative(f64)
+    #[doc="Represents an absolute coordinate, e.g `3`"] Absolute(f64),
+    #[doc="Represents an absolute coordinate, e.g `~5`"] Relative(f64)
 }
 impl Display for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -201,9 +245,15 @@ impl Display for Coordinate {
         }
     }
 }
+
+/// Represents a set of coordinates.
+/// They may either be mixed, a combination of relative and absolute coordinates, or local.
+/// Create coordinates using the [`loc!`] macro (this supports expressions too).
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Coordinates {
+    /// Represents mixed coordinates, consisting of multiple [`Coordinate`]s
     Mixed(Coordinate, Coordinate, Coordinate),
+    /// Represents local coordinates
     Local(f64, f64, f64)
 }
 impl Display for Coordinates {
@@ -222,6 +272,8 @@ impl Display for Coordinates {
     }
 }
 
+/// Create [`Coordinates`] using the same syntax as minecraft.
+/// Currently only literals are supported but expressions should be soon
 #[macro_export]
 macro_rules! loc {
     (^$x:literal ^$y:literal ^$z:literal) => {$crate::core::Coordinates::Local($x as f64, $y as f64, $z as f64)};

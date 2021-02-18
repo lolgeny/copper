@@ -31,7 +31,6 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--test=test",
                     "--package=copper"
                 ],
                 "filter": {
