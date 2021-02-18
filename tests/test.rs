@@ -1,8 +1,8 @@
-#![feature(trace_macros)]
+#![feature(trace_macros, box_syntax)]
 
 use std::path::Path;
 
-use copper::{core::GameMode, minecraft::Effect, prelude::*, datapack::function::*};
+use copper::{core::GameMode, datapack::{function::*, item_modifier::{ContextEntity, NumberProvider, ScoreTarget}}, minecraft::Effect, prelude::*};
 
 #[test]
 pub fn test() {
@@ -24,4 +24,11 @@ pub fn test() {
     let mut x = foo.score("#x", "global");
     let y = foo.score("#y", "global").set_to(5);
     x = x + 5 - &y;
+
+    let num = NumberProvider::Score::<i64> {
+        target: ScoreTarget::Fixed("foo"),
+        score: "bar",
+        scale: 1.0
+    };
+    println!("{}", serde_json::to_string(&num).unwrap());
 }

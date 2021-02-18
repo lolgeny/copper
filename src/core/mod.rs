@@ -1,5 +1,6 @@
-use std::{fmt::{Display, Write}};
+use std::{fmt::{Display, Write}, path::{Path, PathBuf}};
 use crate::minecraft::Entity;
+use serde::Serialize;
 
 /// Represents an identifier, of the form `namespace:folders.../id`
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -20,6 +21,27 @@ impl<'a, 'b> Identifier<'a, 'b> {
             folders: &parts[..parts.len()-1],
             id: parts[parts.len()-1]
         }
+    }
+    pub (crate) fn join(&self, path: impl AsRef<Path>, folder: &str, extension: &str) -> PathBuf {
+        let mut path = path.as_ref().join(self.namespace).join(folder);
+        for folder in self.folders {
+            path = path.join(folder);
+        }
+        path = path.join(self.id);
+        path.set_extension(extension);
+        path
+    }
+}
+impl Serialize for Identifier<'_, '_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        let mut out = String::from(self.namespace);
+        for folder in self.folders {
+            write!(out, "{}/", folder).unwrap();
+        }
+        write!(out, "{}", self.id).unwrap();
+        serializer.serialize_str(&out)
     }
 }
 
@@ -310,4 +332,12 @@ macro_rules! loc {
 	(~ ~ $z:literal) => {$crate::core::Coordinates::Mixed($crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Absolute($z as f64))};
 	(~ ~ ~$z:literal) => {$crate::core::Coordinates::Mixed($crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Relative($z as f64))};
 	(~ ~ ~) => {$crate::core::Coordinates::Mixed($crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Relative(0f64),$crate::core::Coordinate::Relative(0f64))};
+}
+
+/// Represents a colour
+#[derive(Serialize, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+#[allow(missing_docs)]
+pub enum Color {
+    White, Orange, Magenta, LightBlue, Yellow, Lime, Pink, Gray, LightGray, Cyan, Purple, Blue, Brown, Green, Red, Black
 }
