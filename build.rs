@@ -6,7 +6,12 @@ use fs::write;
 
 fn mc_type(file: &str, out_file: &str, enum_name: &str, mc_dir: &Path, out_dir: &Path) {
     let items = mc_dir.join(file);
-    let mut out = format!("#[derive(Eq, PartialEq, Debug, Copy, Clone)]\npub enum {} {{\n", enum_name);
+    let mut out = format!(
+r#"
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum {} {{
+"#, enum_name);
     let mut fmt_out = format!(
 r#"impl Display for {} {{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{
@@ -48,6 +53,9 @@ fn main() {
     mc_type("items.txt", "items.rs", "Item", &mc_dir, &out_dir);
     mc_type("entity.txt", "entity.rs", "Entity", &mc_dir, &out_dir);
     mc_type("effects.txt", "effect.rs", "Effect", &mc_dir, &out_dir);
+    mc_type("enchant.txt", "enchant.rs", "Enchant", &mc_dir, &out_dir);
+    mc_type("structures.txt", "structures.rs", "Structure", &mc_dir, &out_dir);
+
 
     let mut loc_out = String::from(
 r#"#[macro_export]
