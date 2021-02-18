@@ -1,4 +1,4 @@
-#![feature(try_blocks)]
+#![feature(try_blocks, box_patterns)]
 #![deny(rust_2018_idioms, deprecated_in_future, missing_docs)]
 #![warn(rustdoc)]
 #![allow(missing_doc_code_examples)]
