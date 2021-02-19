@@ -1,6 +1,6 @@
 use std::{fmt::{Display, Write}, path::{Path, PathBuf}};
 use crate::minecraft::Entity;
-use serde::Serialize;
+use serde::{Serialize, Serializer, ser::SerializeMap};
 
 /// Represents an identifier, of the form `namespace:folders.../id`
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -105,8 +105,9 @@ impl Display for SelectorSort {
     }
 }
 
-/// Represents a game mode, used in selectors.
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+/// Represents a game mode, used in selectors and predicates.
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum GameMode {
     #[doc = "Represents `gamemode=creative`"] Creative,
     #[doc = "Represents `gamemode=survival`"] Survival,
@@ -340,4 +341,24 @@ macro_rules! loc {
 #[allow(missing_docs)]
 pub enum Color {
     White, Orange, Magenta, LightBlue, Yellow, Lime, Pink, Gray, LightGray, Cyan, Purple, Blue, Brown, Green, Red, Black
+}
+
+pub (crate) fn serialize_tuple_map<S, T, U>(list: &Option<&[(T, U)]>, serializer: S) -> Result<S::Ok, S::Error> where
+    S: Serializer,
+    T: Serialize,
+    U: Serialize {
+        let mut map = serializer.serialize_map(None)?;
+        for (key, value) in list.unwrap() {
+            map.serialize_entry(key, value)?;
+        }
+        map.end()
+}
+
+pub (crate) struct TupleMapSerializer<'a,  T: Serialize, U: Serialize> (pub &'a [(T, U)]);
+impl<T: Serialize, U: Serialize> Serialize for TupleMapSerializer<'_, T, U> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer {
+        serialize_tuple_map(&Some(self.0), serializer)
+    }
 }

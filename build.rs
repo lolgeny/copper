@@ -55,6 +55,7 @@ fn main() {
     mc_type("effects.txt", "effect.rs", "Effect", &mc_dir, &out_dir);
     mc_type("enchant.txt", "enchant.rs", "Enchant", &mc_dir, &out_dir);
     mc_type("structures.txt", "structures.rs", "Structure", &mc_dir, &out_dir);
+    mc_type("potions.txt", "potions.rs", "Potion", &mc_dir, &out_dir);
 
 
     let mut loc_out = String::from(

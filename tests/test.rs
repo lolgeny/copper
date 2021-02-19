@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use copper::{core::GameMode, datapack::{function::*, item_modifier::{ContextEntity, NumberProvider, ScoreTarget}}, minecraft::Effect, prelude::*};
+use copper::{core::GameMode, datapack::{function::*, item_modifier::{NumberProvider, PlayerContextEntity, ScoreTarget}, predicate::{DistancePredicate, EntityPredicate, EquipmentPredicate, ItemPredicate, OptionalRange, Predicate, Range}}, minecraft::Effect, prelude::*};
 
 #[test]
 pub fn test() {
@@ -31,4 +31,25 @@ pub fn test() {
         scale: 1.0
     };
     println!("{}", serde_json::to_string(&num).unwrap());
+
+    pack.predicate(id!(foo:my_predicate), Predicate::EntityProperties {
+        entity: PlayerContextEntity::This,
+        predicate: EntityPredicate {
+            distance: Some(DistancePredicate {
+                horizontal: Some(Range {
+                    min: 0.0,
+                    max: 10.0
+                }),
+                ..default()
+            }),
+            equipment: Some(EquipmentPredicate {
+                mainhand: Some(ItemPredicate {
+                    count: Some(OptionalRange::Exact(32)),
+                    ..default()
+                }),
+                ..default()
+            }),
+            ..default()
+        }
+    })
 }

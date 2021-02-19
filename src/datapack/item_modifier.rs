@@ -9,7 +9,7 @@ use crate::{core::{Color, Identifier}, minecraft::*};
 
 
 /// A general context entity
-#[derive(Serialize)]
+#[derive(Serialize, PartialEq, Eq, Clone, Copy, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ContextEntity {
     /// Represents "this" entity
@@ -50,11 +50,13 @@ pub enum PlayerContextEntity {
 
 
 #[doc(hidden)]
-pub trait Number: Serialize {}
+pub trait Number: Serialize + PartialEq + Clone {}
 impl Number for i64 {}
 impl Number for f64 {}
+impl<N: Number> Number for NumberProvider<'_, N> {}
 
 /// Represents a score target used in a [`NumberProvider`]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ScoreTarget<'a> {
     /// Represents a fixed name
     Fixed(&'a str),
@@ -78,6 +80,7 @@ impl Serialize for ScoreTarget<'_> {
 }
 
 /// A number provider. This is implemented for `f64`, `i64`, and other providers defined in this module.
+#[derive(Clone, PartialEq)]
 pub enum NumberProvider<'a, N: Number> {
     /// A constant number provider, `{"type": "constant"}`
     Constant (N),
